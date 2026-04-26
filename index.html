@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huella Hídrica - FNC V9.4 Final</title>
+    <style>
+        :root {
+            --bg-cream: #f2ede0;
+            --teal-main: #58a4a4;
+            --teal-dark: #3d7a7a;
+            --text-color: #2c3a38;
+            --white: #ffffff;
+            --accent-gold: #d4af37;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-cream);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        /* ONDA DINÁMICA - Posición inicial más baja */
+        .wave-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 25%; /* Nivel más bajo solicitado */
+            background-color: var(--teal-main);
+            transition: height 1s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: 1;
+        }
+
+        .wave-container::before {
+            content: "";
+            position: absolute;
+            top: -45px;
+            left: 0;
+            width: 100%;
+            height: 90px;
+            background-color: var(--teal-main);
+            clip-path: ellipse(60% 50% at 50% 100%);
+        }
+
+        .main-content {
+            position: relative;
+            z-index: 5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .page-section {
+            display: none;
+            width: 100%;
+            max-width: 850px;
+            padding: 40px 20px;
+            animation: fadeIn 0.6s ease-out;
+            text-align: center;
+        }
+
+        .page-section.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1 { font-size: 2.6rem; color: var(--teal-main); font-weight: normal; margin-bottom: 10px; }
+        h2 { font-size: 1.8rem; color: var(--teal-dark); font-weight: normal; margin: 20px 0; }
+        .subtitle { font-size: 1.1rem; margin-bottom: 25px; line-height: 1.4; }
+
+        .btn-mockup {
+            background-color: var(--teal-main);
+            color: white;
+            padding: 18px 45px;
+            border-radius: 35px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 6px 20px rgba(88, 164, 164, 0.3);
+            transition: all 0.3s;
+            margin: 10px;
+            font-weight: bold;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .btn-mockup:hover { background-color: var(--teal-dark); transform: translateY(-3px); }
+
+        /* Botón claro sobre la onda */
+        .btn-on-wave {
+            background-color: var(--bg-cream);
+            color: var(--teal-dark);
+            border: 2px solid var(--white);
+        }
+        
+        .btn-back { 
+            background: transparent; 
+            color: var(--text-color); 
+            text-decoration: underline;
+            border: none;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 1rem;
+        }
+
+        .step-indicator { font-size: 0.8rem; color: var(--teal-main); font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+        .calc-step { display: none; width: 100%; }
+        .calc-step.active { display: block; }
+        
+        input, select {
+            width: 100%;
+            max-width: 450px;
+            padding: 16px;
+            margin: 15px 0;
+            border: 2px solid #e0d9c8;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            background: rgba(255,255,255,0.95);
+        }
+
+        /* COMPENSACIÓN (V8 RESTAURADA) */
+        .benefits-grid { text-align: left; margin: 30px 0; }
+        .benefit-item { margin-bottom: 30px; }
+        .benefit-item h3 { color: var(--teal-dark); font-size: 1.3rem; margin-bottom: 8px; display: flex; align-items: center; }
+        .benefit-item h3::before { content: "•"; color: var(--teal-main); font-size: 2rem; margin-right: 10px; }
+        .benefit-item p { font-size: 1rem; line-height: 1.6; margin: 0; padding-left: 20px; color: #3d4a48; }
+        
+        .highlight-box {
+            background: rgba(88, 164, 164, 0.1);
+            padding: 25px;
+            border-radius: 15px;
+            border-left: 5px solid var(--teal-main);
+            text-align: left;
+            margin: 25px 0;
+            font-style: italic;
+            font-size: 1.1rem;
+        }
+
+        .note-small { font-size: 0.85rem; font-style: italic; margin-top: 30px; opacity: 0.9; text-align: left; line-height: 1.5; color: var(--teal-dark); }
+
+        /* FOOTER CORREGIDO - En la franja azul */
+        .footer-content {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .footer-text {
+            color: var(--white);
+            max-width: 500px;
+            margin-bottom: 15px;
+            font-style: italic;
+            line-height: 1.5;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .logo-fnc {
+            width: 80px;
+            height: auto;
+            filter: brightness(0) invert(1); /* Poner logo en blanco */
+        }
+
+        .res-card { 
+            background: white; 
+            padding: 40px 20px; 
+            border-radius: 25px; 
+            margin-top: 20px; 
+            color: var(--teal-dark); 
+            width: 95%; 
+            max-width: 500px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+        }
+        .count-up { font-size: 3.2rem; font-weight: bold; color: var(--teal-main); margin: 10px 0; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="wave-container" id="wave"></div>
+
+<div class="main-content">
+    
+    <!-- HOME -->
+    <section id="home" class="page-section active">
+        <h1 style="margin-top: 40px;">Calcula tu Huella Hídrica</h1>
+        <p class="subtitle">Todos consumimos agua. Esencial. Pero... ¿Cuánta?</p>
+        
+        <button class="btn-mockup" onclick="showSection('calc')">Conócelo ></button>
+        
+        <p style="font-size: 0.85rem; max-width: 450px; margin: 25px 0; color: #7f8c8d;">
+            * Este cálculo online se basa en promedios y aproximaciones. Sus resultados deben considerarse una estimación.
+        </p>
+
+        <p style="font-size: 0.95rem; margin-bottom: 15px;">Una vez conozcas tu huella hídrica podrás compensarla.</p>
+        
+        <button class="btn-mockup btn-on-wave" onclick="showSection('comp')">Compensación ></button>
+
+        <!-- FOOTER DENTRO DE LA FRANJA AZUL -->
+        <div class="footer-content" id="home-footer">
+            <p class="footer-text">¿Quizás conozcas tu huella de carbono y trabajes sobre ella? ¿Por qué no con el agua?</p>
+            <!-- Logo placeholder (Simulado con SVG para que se vea el diseño) -->
+            <svg class="logo-fnc" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="2" stroke-dasharray="5,5"/>
+                <text x="50" y="55" font-family="Arial" font-size="20" fill="white" text-anchor="middle" font-weight="bold">FNC</text>
+            </svg>
+        </div>
+    </section>
+
+    <!-- COMPENSACIÓN RESTAURADA (V8) -->
+    <section id="comp" class="page-section">
+        <h1>Compensamos tu Huella Hídrica</h1>
+        <p style="color: var(--teal-dark); font-weight: bold; font-size: 1.2rem;">Fibras Naturales Canarias tiene una nueva solución.</p>
+        
+        <p>Mediante nuestro proceso de valorización de los residuos de la platanera extraemos agua. Aproximadamente 4 litros por cada "rolo" (tronco) de platanera.</p>
+
+        <div class="highlight-box">
+            ¿Qué mejor que por cada litro de agua de tu huella hídrica puedas compensarlo con un litro de agua extraída de un residuo?
+        </div>
+
+        <h2 style="text-align: left; width: 100%;">¿Qué beneficios obtienes?</h2>
+        
+        <div class="benefits-grid">
+            <div class="benefit-item"><h3>Valor añadido reputacional</h3><p>Contribuye a los criterios ESG y mejora su posicionamiento frente a turistas conscientes.</p></div>
+            <div class="benefit-item"><h3>Acceso a certificaciones</h3><p>Ayuda a cumplir con normativas y exigencias del mercado internacional.</p></div>
+            <div class="benefit-item"><h3>Ahorro económico directo</h3><p>Sustituye productos caros por agua enriquecida local. Ahorros de al menos 10.000€ anuales.</p></div>
+            <div class="benefit-item"><h3>Kilómetro cero</h3><p>Recurso local que elimina costes logísticos.</p></div>
+            <div class="benefit-item"><h3>Diferenciación</h3><p>Estrategia de sostenibilidad real y comunicable.</p></div>
+        </div>
+
+        <button class="btn-mockup" onclick="showSection('calc')">Calcula tu huella hídrica ></button>
+        <button class="btn-back" onclick="showSection('home')">Volver al inicio</button>
+        <div style="height: 150px;"></div>
+    </section>
+
+    <!-- CALCULADORA (15 PREGUNTAS) -->
+    <section id="calc" class="page-section">
+        <div id="calc-steps-container" style="width: 100%;">
+            <div class="calc-step active">
+                <div class="step-indicator">Paso 1 de 15</div>
+                <h2>¿Habitaciones ocupadas (media)?</h2>
+                <input type="number" id="q1" placeholder="Ej: 150" inputmode="numeric">
+                <button class="btn-mockup" onclick="changeCalcStep(1)">Siguiente</button>
+                <br><button class="btn-back" onclick="showSection('home')">Cancelar</button>
+            </div>
+            
+            <div id="dynamic-steps"></div>
+            
+            <div class="calc-step" id="last-step">
+                <div class="step-indicator">Paso 15 de 15</div>
+                <h2>Tipo de fertilizante usado</h2>
+                <select id="q15"><option value="1.4">Químico</option><option value="1">Orgánico</option></select>
+                <button class="btn-mockup" onclick="calculateFinal()">Finalizar y Calcular</button>
+                <br><button class="btn-back" onclick="changeCalcStep(-1)">Anterior</button>
+            </div>
+
+            <div id="results" class="calc-step">
+                <h1 style="color:white">Resultado</h1>
+                <div class="res-card">
+                    <span id="resL" class="count-up">0</span>
+                    <p style="font-weight: bold;">Litros al mes</p>
+                    <hr style="margin: 25px 0; opacity: 0.1;">
+                    <p>Compensación necesaria:</p>
+                    <span id="resP" style="font-size: 2.8rem; color: var(--teal-dark); font-weight: bold;">0</span>
+                    <p>Pseudotallos de platanera</p>
+                    <button class="btn-mockup" style="background-color: var(--accent-gold); margin-top: 20px;" onclick="alert('Solicitud enviada')">Solicitar Plan FNC</button>
+                </div>
+                <button class="btn-back" onclick="location.reload()" style="color:white; margin-top: 20px;">Reiniciar</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+    const questions = [
+        {id: 2, t: "¿% de ocupación media anual?", type: "num", p: "0-100"},
+        {id: 3, t: "Gestión de lavandería", type: "sel", opts: [["1.2", "Propia"], ["1", "Externa"], ["1.1", "Mixta"]]},
+        {id: 4, t: "¿Comidas diarias servidas?", type: "num", p: "Total diario"},
+        {id: 5, t: "% Grifos ahorro (aireadores)", type: "sel", opts: [["1", "0%"], ["0.9", "50%"], ["0.8", "100%"]]},
+        {id: 6, t: "Cambio de sábanas", type: "sel", opts: [["1", "Diario"], ["0.7", "Bajo petición"]]},
+        {id: 7, t: "Superficie piscinas (m²)", type: "num", p: "m2"},
+        {id: 8, t: "¿Agua regenerada propia?", type: "sel", opts: [["0.9", "Sí"], ["1", "No"]]},
+        {id: 9, t: "% Productos KM0 locales", type: "num", p: "0-100"},
+        {id: 10, t: "Carne roja / semana", type: "num", p: "Raciones"},
+        {id: 11, t: "¿Hacen compostaje?", type: "sel", opts: [["0.95", "Sí"], ["1", "No"]]},
+        {id: 12, t: "Superficie jardines (m²)", type: "num", p: "m2"},
+        {id: 13, t: "Tipo de vegetación", type: "sel", opts: [["0.7", "Autóctona"], ["1.3", "Césped"]]},
+        {id: 14, t: "Sistema de riego", type: "sel", opts: [["0.8", "Goteo"], ["1.2", "Aspersión"]]}
+    ];
+
+    const container = document.getElementById('dynamic-steps');
+    questions.forEach(q => {
+        let div = document.createElement('div');
+        div.className = 'calc-step';
+        div.innerHTML = `
+            <div class="step-indicator">Paso ${q.id} de 15</div>
+            <h2>${q.t}</h2>
+            ${q.type === 'num' ? `<input type="number" id="q${q.id}" placeholder="${q.p}" inputmode="numeric">` : 
+            `<select id="q${q.id}">${q.opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`}
+            <button class="btn-mockup" onclick="changeCalcStep(1)">Siguiente</button>
+            <br><button class="btn-back" onclick="changeCalcStep(-1)">Anterior</button>
+        `;
+        container.appendChild(div);
+    });
+    container.appendChild(document.getElementById('last-step'));
+
+    const wave = document.getElementById('wave');
+    const footer = document.getElementById('home-footer');
+    let currentStep = 0;
+    
+    function showSection(id) {
+        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        
+        if(id === 'home') {
+            wave.style.height = '25%';
+            footer.style.display = 'flex';
+        } else {
+            footer.style.display = 'none';
+            if(id === 'comp') wave.style.height = '12%';
+            else { wave.style.height = '40%'; currentStep = 0; updateStepView(); }
+        }
+        window.scrollTo(0,0);
+    }
+
+    function changeCalcStep(dir) {
+        currentStep += dir;
+        updateStepView();
+    }
+
+    function updateStepView() {
+        const allSteps = document.querySelectorAll('.calc-step');
+        allSteps.forEach((s, i) => s.classList.toggle('active', i === currentStep));
+        let progress = currentStep / 15;
+        wave.style.height = (40 + (progress * 55)) + '%';
+        window.scrollTo(0,0);
+    }
+
+    function calculateFinal() {
+        const v = id => parseFloat(document.getElementById(id).value) || 0;
+        let total = (v('q1') * (v('q2')/100) * 350 * 30) * v('q3') * v('q5') * v('q6') * v('q8');
+        total += (v('q4') * 30 * 500) * (1 - (v('q9')/100 * 0.3)) * v('q11');
+        total += (v('q10') * 4 * 3000) + (v('q7') * 180);
+        total += (v('q12') * 150) * v('q13') * v('q14') * v('q15');
+        const litros = Math.round(total);
+        const tallos = Math.ceil(litros / 6);
+        currentStep = document.querySelectorAll('.calc-step').length - 1;
+        updateStepView();
+        wave.style.height = '100%';
+        setTimeout(() => {
+            let start = 0;
+            let duration = 1500;
+            let obj = document.getElementById('resL');
+            let startTime = null;
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let progress = Math.min((timestamp - startTime) / duration, 1);
+                obj.innerHTML = Math.floor(progress * litros).toLocaleString();
+                if (progress < 1) window.requestAnimationFrame(step);
+            }
+            window.requestAnimationFrame(step);
+            document.getElementById('resP').innerText = tallos.toLocaleString();
+        }, 500);
+    }
+</script>
+</body>
+</html>
